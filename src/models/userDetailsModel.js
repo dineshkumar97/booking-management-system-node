@@ -24,6 +24,11 @@ const userDetailsSchema = new mongoose.Schema({
         default: ""
     },
 
+    profileImage: {
+        type: String,
+        default: ""
+    },
+
     role: {
         type: String,
         enum: [
@@ -33,6 +38,7 @@ const userDetailsSchema = new mongoose.Schema({
         ],
         default: "CUSTOMER"
     },
+
     designation: {
         type: String,
         trim: true,
@@ -47,13 +53,13 @@ const userDetailsSchema = new mongoose.Schema({
         ],
         default: "ACTIVE"
     },
+
     services: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Service"
         }
     ]
-
 });
 
 const UserDetails = mongoose.model(

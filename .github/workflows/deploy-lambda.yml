@@ -10,21 +10,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout repository
       - name: Checkout code
         uses: actions/checkout@v5
 
+      # 2. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
+      # 3. Install dependencies
       - name: Install dependencies
         run: npm ci
 
+      # 4. Create Lambda deployment package
       - name: Create deployment package
-        run: zip -r lambda.zip . -x ".git/*" ".github/*"
+        run: |
+          zip -r lambda.zip . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "README.md"
 
+      # 5. Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -32,8 +41,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_2 }}
           aws-region: ap-south-1
 
+      # 6. Deploy code to new Lambda
       - name: Deploy to Lambda
         run: |
           aws lambda update-function-code \
-            --function-name bookingmanagementsytemnode-02 \
+            --function-name bms-node-api \
             --zip-file fileb://lambda.zip
