@@ -36,5 +36,5 @@ jobs:
       - name: Deploy Lambda
         run: |
           aws lambda update-function-code \
-            --function-name booking-management-system-node \
+            --function-name booking-management-system-node-be \
             --zip-file fileb://function.zip
