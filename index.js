@@ -6,7 +6,9 @@ import { setServers } from "node:dns/promises";
 import serverless from "serverless-http";
 
 import userDetailsRouter from "./src/routes/userDetailsRouter.js";
-
+import appointmentRouter from "./src/routes/appointmentRouter.js";
+import serviceRouter from "./src/routes/serviceRouter.js";
+import staffRouter from "./src/routes/staffRouter.js";
 setServers(["1.1.1.1", "8.8.8.8"]);
 
 const mongooseString = process.env.DATABASE_URL;
@@ -21,6 +23,9 @@ app.use(express.urlencoded({
 }));
 
 app.use("/booking-management-systemt/user", userDetailsRouter);
+app.use("/booking-management-systemt/appointments",appointmentRouter);
+app.use("/booking-management-systemt/services",serviceRouter);
+app.use("/booking-management-systemt/staff",staffRouter);
 
 
 // MongoDB connection

@@ -1,50 +1,60 @@
 import mongoose from "mongoose";
 
-const userDetailsSchema = new mongoose.Schema(
-    {
-        name: {
-            type: String,
-            required: true
-        },
-
-        email: {
-            type: String,
-            required: true,
-            unique: true
-        },
-
-        phone: {
-            type: String
-        },
-        role: {
-            type: String
-        },
-        status: {
-            type: String
-        },
-
-        password: {
-            type: String,
-            required: true
-        },
-        resetPasswordToken: {
-            type: String,
-            default: null
-        },
-
-        resetPasswordExpires: {
-            type: Date,
-            default: null
-        },
-        profileImage: {
-            type: String,
-            default: ''
-        }
+const userDetailsSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+        trim: true
     },
-    {
-        timestamps: true
-    }
-);
+
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true
+    },
+
+    password: {
+        type: String,
+        required: true
+    },
+
+    phone: {
+        type: String,
+        default: ""
+    },
+
+    role: {
+        type: String,
+        enum: [
+            "CUSTOMER",
+            "STAFF",
+            "ADMIN"
+        ],
+        default: "CUSTOMER"
+    },
+    designation: {
+        type: String,
+        trim: true,
+        default: ""
+    },
+
+    status: {
+        type: String,
+        enum: [
+            "ACTIVE",
+            "INACTIVE"
+        ],
+        default: "ACTIVE"
+    },
+    services: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Service"
+        }
+    ]
+
+});
 
 const UserDetails = mongoose.model(
     "UserDetails",
