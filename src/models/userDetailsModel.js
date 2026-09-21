@@ -53,7 +53,11 @@ const userDetailsSchema = new mongoose.Schema({
         ],
         default: "ACTIVE"
     },
-
+    uniqueUserId: {
+        type: String,
+        required: true,
+        unique: true
+    },
     services: [
         {
             type: mongoose.Schema.Types.ObjectId,

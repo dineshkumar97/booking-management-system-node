@@ -21,7 +21,11 @@ const appointmentSchema = new mongoose.Schema(
       ref: "UserDetails",
       required: true
     },
-
+    orderId: {
+      type: String,
+      required: true,
+      unique: true
+    },
     appointmentDate: {
       type: Date,
       required: true

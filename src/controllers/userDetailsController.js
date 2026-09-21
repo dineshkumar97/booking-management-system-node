@@ -10,25 +10,66 @@ import { sendSignupCreatedEmail } from "../services/emailService.js";
 
 export const createUser = async (req, res) => {
     try {
-        const { name, email, phone, password } = req.body;
-        const existingUser = await UserDetails.findOne({ email });
-        if (!existingUser) {
-            const hashedPassword = await bcrypt.hash(password, 10);
-            const newUser = new UserDetails({ name, email, phone, password: hashedPassword });
-            await newUser.save();
-            await sendSignupCreatedEmail(newUser);
-            return res.status(201).json({ message: 'Signup successfully' });
+        const {
+            name,
+            email,
+            phone,
+            password,
+            role
+        } = req.body;
+        // Check existing email
+        const existingUser = await UserDetails.findOne({
+            email
+        });
+        if (existingUser) {
+            return res.status(409).json({
+                message: 'User Already Exists'
+            });
         }
-        res.status(409).json({ message: 'User Already Exists' });
+        // Allow only CUSTOMER / STAFF
+        const userRole =
+            role === 'STAFF'
+                ? 'STAFF'
+                : 'CUSTOMER';
 
+        // Generate unique order/user ID
+        const uniqueUserId =
+            `USR-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        // Hash password
+        const hashedPassword =
+            await bcrypt.hash(password, 10);
+
+        // Create user
+        const newUser = new UserDetails({
+            name,
+            email,
+            phone,
+            password: hashedPassword,
+            role: userRole,
+            uniqueUserId
+        });
+        await newUser.save();
+        await sendSignupCreatedEmail(newUser);
+        return res.status(201).json({
+            message: 'Signup successfully',
+            data: {
+                id: newUser._id,
+                name: newUser.name,
+                email: newUser.email,
+                phone: newUser.phone,
+                role: newUser.role,
+                uniqueUserId: newUser.uniqueUserId,
+            }
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({
+        return res.status(500).json({
             message: error.message
         });
+
     }
 };
-
 
 
 

@@ -3,7 +3,6 @@ import Appointment from "../models/appointmentModel.js";
 
 export const createAppointment = async (req, res) => {
   try {
-
     const {
       serviceId,
       staffId,
@@ -27,7 +26,6 @@ export const createAppointment = async (req, res) => {
 
     // 2. Get logged-in customer
     const customerId = req.user.id;
-
     // 3. Check whether slot is already booked
     const existingAppointment = await Appointment.findOne({
       staffId,
@@ -37,15 +35,17 @@ export const createAppointment = async (req, res) => {
         $in: ["PENDING", "CONFIRMED"]
       }
     });
-
     if (existingAppointment) {
       return res.status(409).json({
         message: "This time slot is already booked"
       });
     }
-
-    // 4. Create appointment
+    // 4. Generate unique Order ID
+    const orderId =
+      `ORD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    // 5. Create appointment
     const appointment = await Appointment.create({
+      orderId,
       customerId,
       serviceId,
       staffId,
@@ -55,13 +55,12 @@ export const createAppointment = async (req, res) => {
       status: "PENDING",
       notes: notes || ""
     });
-
-    // 5. Response
+    // 6. Response
     return res.status(201).json({
       message: "Appointment booked successfully",
-
-      appointment: {
+      data: {
         id: appointment._id,
+        orderId: appointment.orderId,
         customerId: appointment.customerId,
         serviceId: appointment.serviceId,
         staffId: appointment.staffId,
@@ -72,21 +71,16 @@ export const createAppointment = async (req, res) => {
         notes: appointment.notes
       }
     });
-
   } catch (error) {
-
     console.error(
       "Create appointment error:",
       error
     );
-
     return res.status(500).json({
       message: "Failed to create appointment"
     });
   }
 };
-
-
 export const getMyAppointments = async (req, res) => {
   try {
     const customerId = req.user.id;
@@ -109,7 +103,7 @@ export const getMyAppointments = async (req, res) => {
 
     return res.status(200).json({
       message: "Appointments fetched successfully",
-     data: appointments
+      data: appointments
     });
 
   } catch (error) {
@@ -152,7 +146,7 @@ export const getAppointmentById = async (req, res) => {
 
     return res.status(200).json({
       message: "Appointment fetched successfully",
-      data:  appointment
+      data: appointment
     });
 
   } catch (error) {
@@ -221,6 +215,232 @@ export const cancelAppointment = async (req, res) => {
 
     return res.status(500).json({
       message: "Failed to cancel appointment"
+    });
+  }
+};
+
+
+export const getStaffAppointments = async (req, res) => {
+  try {
+
+    const staffId = req.user.id;
+
+    const appointments = await Appointment.find({
+      staffId
+    })
+      .populate(
+        "customerId",
+        "name email phone"
+      )
+      .populate(
+        "serviceId",
+        "name description duration price"
+      )
+      .populate(
+        "staffId",
+        "name email"
+      )
+      .sort({
+        appointmentDate: -1,
+        startTime: -1
+      });
+
+    return res.status(200).json({
+      message: "Staff appointments fetched successfully",
+      data: appointments
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Get staff appointments error:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Failed to fetch staff appointments"
+    });
+
+  }
+};
+
+export const getStaffAppointmentById = async (req, res) => {
+  try {
+    const staffId = req.user.id;
+    const appointmentId = req.params.id;
+
+    const appointment = await Appointment.findOne({
+      _id: appointmentId,
+      staffId
+    })
+      .populate(
+        "customerId",
+        "name email phone"
+      )
+      .populate(
+        "serviceId",
+        "name description duration price"
+      )
+      .populate(
+        "staffId",
+        "name email"
+      );
+
+    if (!appointment) {
+      return res.status(404).json({
+        message: "Appointment not found"
+      });
+    }
+
+    return res.status(200).json({
+      message: "Appointment fetched successfully",
+      data: appointment
+    });
+
+  } catch (error) {
+    console.error(
+      "Get staff appointment details error:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Failed to fetch appointment"
+    });
+  }
+};
+
+
+
+export const confirmAppointment = async (req, res) => {
+  try {
+
+    const staffId = req.user.id;
+    const appointmentId = req.params.id;
+
+    const appointment = await Appointment.findOneAndUpdate(
+      {
+        _id: appointmentId,
+        staffId,
+        status: "PENDING"
+      },
+      {
+        status: "CONFIRMED"
+      },
+      {
+        new: true
+      }
+    );
+
+    if (!appointment) {
+      return res.status(404).json({
+        message: "Pending appointment not found"
+      });
+    }
+
+    return res.status(200).json({
+      message: "Appointment confirmed successfully",
+      data: appointment
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Confirm appointment error:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Failed to confirm appointment"
+    });
+
+  }
+};
+
+
+export const rejectAppointment = async (req, res) => {
+  try {
+
+    const staffId = req.user.id;
+    const appointmentId = req.params.id;
+
+    const appointment = await Appointment.findOneAndUpdate(
+      {
+        _id: appointmentId,
+        staffId,
+        status: "PENDING"
+      },
+      {
+        status: "REJECTED"
+      },
+      {
+        new: true
+      }
+    );
+
+    if (!appointment) {
+      return res.status(404).json({
+        message: "Pending appointment not found"
+      });
+    }
+
+    return res.status(200).json({
+      message: "Appointment rejected successfully",
+      data: appointment
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Reject appointment error:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Failed to reject appointment"
+    });
+
+  }
+};
+
+
+export const completeAppointment = async (req, res) => {
+  try {
+    const staffId = req.user.id;
+    const appointmentId = req.params.id;
+
+    const appointment = await Appointment.findOneAndUpdate(
+      {
+        _id: appointmentId,
+        staffId,
+        status: "CONFIRMED"
+      },
+      {
+        status: "COMPLETED"
+      },
+      {
+        new: true
+      }
+    );
+
+    if (!appointment) {
+      return res.status(404).json({
+        message: "Confirmed appointment not found"
+      });
+    }
+
+    return res.status(200).json({
+      message: "Appointment completed successfully",
+      data: appointment
+    });
+
+  } catch (error) {
+    console.error(
+      "Complete appointment error:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Failed to complete appointment"
     });
   }
 };
