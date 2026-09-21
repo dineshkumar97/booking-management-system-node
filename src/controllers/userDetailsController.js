@@ -78,31 +78,51 @@ export const getUsers = async (req, res) => {
 export const authenticate = async (req, res) => {
     try {
         const { email, password } = req.body;
+
         // 1. Find user by email
         const user = await UserDetails.findOne({ email });
+
         // 2. Email not found
         if (!user) {
             return res.status(401).json({
                 message: "Invalid email or password"
             });
         }
+
         // 3. Compare password
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await bcrypt.compare(
+            password,
+            user.password
+        );
+
         // 4. Password doesn't match
         if (!isMatch) {
             return res.status(401).json({
                 message: "Invalid email or password"
             });
         }
-        // 5. Login successful
+
+        // 5. Check user status
+        if (user.status !== "ACTIVE") {
+            return res.status(403).json({
+                message: "User account is inactive"
+            });
+        }
+
+        // 6. Generate JWT
         const token = generationToken(user);
+
+        // 7. User details
         const userDetails = {
             _id: user._id,
             name: user.name,
             email: user.email,
-            phone: user.phone
+            phone: user.phone,
+            role: user?.role,
+            status: user.status
+        };
 
-        }
+        // 8. Login successful
         return res.status(200).json({
             message: "Login successful",
             token: token,
@@ -110,13 +130,14 @@ export const authenticate = async (req, res) => {
         });
 
     } catch (error) {
+
         console.error("Authentication error:", error);
+
         return res.status(500).json({
             message: error.message
         });
     }
 };
-
 
 export const userDelete = async (req, res) => {
     try {
@@ -194,6 +215,8 @@ export const updateUsers = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
+                role: user?.role,
+                status: user.status,
                 profileImage: user.profileImage || ''
             }
         });
@@ -208,50 +231,7 @@ export const updateUsers = async (req, res) => {
         });
     }
 };
-// export const updateUsers = async (req, res) => {
-//     try {
-//         const { name, email, phone } = req.body;
-//         const updateData = {
-//             name,
-//             email,
-//             phone
-//         };
-//         // If image is uploaded
-//         if (req.file) {
-//             updateData.profileImage = req.file.originalname;
-//         }
-//         const user = await UserDetails.findByIdAndUpdate(
-//             req.params.idUser,
-//             updateData,
-//             {
-//                 new: true,
-//                 runValidators: true
-//             }
-//         );
-//         if (!user) {
-//             return res.status(404).json({
-//                 message: 'User not found'
-//             });
-//         }
-//         const userDetails = {
-//             _id: user._id,
-//             name: user.name,
-//             email: user.email,
-//             phone: user.phone,
-//             profileImage: user.profileImage
-//         };
-//         return res.status(200).json({
-//             message: 'Profile has been updated successfully.',
-//             data: userDetails
-//         });
-//     } catch (error) {
-//         console.error(error);
-//         return res.status(500).json({
-//             message: error.message,
-//             error: error.message
-//         });
-//     }
-// };
+
 
 
 
@@ -293,7 +273,8 @@ export const getProfile = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
-
+                role: user?.role,
+                status: user.status,
                 // IMPORTANT
                 profileImage: profileImage
             }
