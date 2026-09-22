@@ -7,7 +7,6 @@ import {
     updateStaff,
     updateStaffStatus,
     deleteStaff,
-    assignServicesToStaff
 } from "../controllers/staffController.js";
 
 const router = express.Router();
@@ -24,7 +23,6 @@ router.put("/update/:id",updateStaff);
 router.patch("/update:id/status",updateStaffStatus);
 // DELETE
 router.delete("/delete:id",deleteStaff);
-router.put("/assign/:id/services", assignServicesToStaff);
 
 
 export default router;

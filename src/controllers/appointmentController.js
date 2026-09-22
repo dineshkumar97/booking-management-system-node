@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Appointment from "../models/appointmentModel.js";
 
+// customer create
 export const createAppointment = async (req, res) => {
   try {
     const {

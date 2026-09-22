@@ -24,7 +24,7 @@ app.use(express.urlencoded({
 
 app.use("/booking-management-systemt/user", userDetailsRouter);
 app.use("/booking-management-systemt/appointments",appointmentRouter);
-app.use("/booking-management-systemt/services",serviceRouter);
+app.use("/booking-management-systemt/service",serviceRouter);
 app.use("/booking-management-systemt/staff",staffRouter);
 
 
@@ -37,13 +37,13 @@ mongoose.connect(mongooseString)
     console.log("Database connection error:", err);
   });
 
-/* const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server started on port ${PORT}`);
 })
- */
+
 //Server Code
-app.get("/", (req, res) => {
+/* app.get("/", (req, res) => {
   res.json({
     success: true,
     message: "Node.js Express Lambda API is working"
@@ -62,4 +62,4 @@ const serverlessHandler = serverless(app, {
 
 export const handler = async (event, context) => {
   return await serverlessHandler(event, context);
-};
+}; */

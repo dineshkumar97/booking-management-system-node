@@ -1,15 +1,18 @@
+import mongoose from "mongoose";
 import bcrypt from 'bcryptjs';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { PutObjectCommand ,GetObjectCommand} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { s3Client } from '../config/s3.js';
 import UserDetails from "../models/userDetailsModel.js";
+import ServiceDetails from "../models/serviceModel.js";
+
 import generationToken from "../tokengeneration/generationToken.js";
 import { sendSignupCreatedEmail } from "../services/emailService.js";
 
 
 export const createUser = async (req, res) => {
     try {
+
         const {
             name,
             email,
@@ -17,30 +20,70 @@ export const createUser = async (req, res) => {
             password,
             role
         } = req.body;
+
+
         // Check existing email
         const existingUser = await UserDetails.findOne({
             email
         });
+
         if (existingUser) {
             return res.status(409).json({
                 message: 'User Already Exists'
             });
         }
+
+
         // Allow only CUSTOMER / STAFF
         const userRole =
-            role === 'STAFF'
-                ? 'STAFF'
-                : 'CUSTOMER';
+            role === 'ADMIN'
+                ? 'ADMIN'
+                : role === 'STAFF'
+                    ? 'STAFF'
+                    : 'CUSTOMER';
 
-        // Generate unique order/user ID
-        const uniqueUserId =
-            `USR-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        // =====================================
+        // Generate Unique User ID
+        // =====================================
 
-        // Hash password
+        const lastUser = await UserDetails
+            .findOne({
+                uniqueUserId: {
+                    $regex: /^BSM\d+$/
+                }
+            })
+            .sort({
+                uniqueUserId: -1
+            });
+
+
+        let uniqueUserId = "BSM000001";
+
+
+        if (lastUser?.uniqueUserId) {
+
+            const lastNumber = parseInt(
+                lastUser.uniqueUserId.replace("BSM", ""),
+                10
+            );
+
+            uniqueUserId =
+                `BSM${String(lastNumber + 1).padStart(6, "0")}`;
+        }
+
+
+        // =====================================
+        // Hash Password
+        // =====================================
+
         const hashedPassword =
             await bcrypt.hash(password, 10);
 
-        // Create user
+
+        // =====================================
+        // Create User
+        // =====================================
+
         const newUser = new UserDetails({
             name,
             email,
@@ -49,28 +92,43 @@ export const createUser = async (req, res) => {
             role: userRole,
             uniqueUserId
         });
+
+
         await newUser.save();
+
+
+        // Signup Email
         await sendSignupCreatedEmail(newUser);
+
+
+        // =====================================
+        // Response
+        // =====================================
+
         return res.status(201).json({
+
             message: 'Signup successfully',
+
             data: {
                 id: newUser._id,
                 name: newUser.name,
                 email: newUser.email,
                 phone: newUser.phone,
                 role: newUser.role,
-                uniqueUserId: newUser.uniqueUserId,
+                uniqueUserId: newUser.uniqueUserId
             }
+
         });
+
     } catch (error) {
+
         console.error(error);
+
         return res.status(500).json({
             message: error.message
         });
-
     }
 };
-
 
 
 
@@ -207,8 +265,47 @@ export const userDelete = async (req, res) => {
 };
 
 export const updateUsers = async (req, res) => {
+
     try {
-        const { name, email, phone } = req.body;
+
+        // ==============================
+        // USER PERMISSION CHECK
+        // ==============================
+
+        const requestedUserId = req.params.idUser;
+
+        const loggedInUserId =
+            req.user._id.toString();
+
+        const loggedInRole =
+            req.user.role;
+
+        // CUSTOMER and STAFF
+        // can update only their own profile
+
+        // ADMIN
+        // can update any user
+
+        if (
+            loggedInRole !== 'ADMIN' &&
+            requestedUserId !== loggedInUserId
+        ) {
+            return res.status(403).json({
+                message:
+                    'You do not have permission to update this user.'
+            });
+        }
+
+
+        // ==============================
+        // EXISTING PROFILE UPDATE CODE
+        // ==============================
+
+        const {
+            name,
+            email,
+            phone
+        } = req.body;
 
         const updateData = {
             name,
@@ -216,10 +313,15 @@ export const updateUsers = async (req, res) => {
             phone
         };
 
-        // Upload profile image to S3
+
+        // ==============================
+        // S3 PROFILE IMAGE
+        // ==============================
+
         if (req.file) {
 
-            const fileName = `uploadImages/${Date.now()}-${req.file.originalname}`;
+            const fileName =
+                `uploadImages/${Date.now()}-${req.file.originalname}`;
 
             const command = new PutObjectCommand({
                 Bucket: process.env.S3_BUCKET_NAME,
@@ -230,18 +332,23 @@ export const updateUsers = async (req, res) => {
 
             await s3Client.send(command);
 
-            // Store only S3 key in MongoDB
             updateData.profileImage = fileName;
         }
 
-        const user = await UserDetails.findByIdAndUpdate(
-            req.params.idUser,
-            updateData,
-            {
-                new: true,
-                runValidators: true
-            }
-        );
+
+        // ==============================
+        // UPDATE USER
+        // ==============================
+
+        const user =
+            await UserDetails.findByIdAndUpdate(
+                req.params.idUser,
+                updateData,
+                {
+                    new: true,
+                    runValidators: true
+                }
+            );
 
         if (!user) {
             return res.status(404).json({
@@ -249,8 +356,14 @@ export const updateUsers = async (req, res) => {
             });
         }
 
+
+        // ==============================
+        // RESPONSE
+        // ==============================
+
         return res.status(200).json({
-            message: 'Profile has been updated successfully.',
+            message:
+                'Profile has been updated successfully.',
             data: {
                 _id: user._id,
                 name: user.name,
@@ -264,7 +377,10 @@ export const updateUsers = async (req, res) => {
 
     } catch (error) {
 
-        console.error('Update user error:', error);
+        console.error(
+            'Update user error:',
+            error
+        );
 
         return res.status(500).json({
             message: 'Something went wrong',
@@ -272,7 +388,6 @@ export const updateUsers = async (req, res) => {
         });
     }
 };
-
 
 
 
@@ -332,6 +447,106 @@ export const getProfile = async (req, res) => {
     }
 };
 
+
+export const assignServicesToStaff = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+        const { services } = req.body;
+
+        // 1. Validate staff ID
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                message: "Invalid staff ID"
+            });
+        }
+
+        // 2. Validate services
+        if (!Array.isArray(services)) {
+            return res.status(400).json({
+                message: "Services must be an array"
+            });
+        }
+
+        // 3. Check staff
+        const staff = await UserDetails.findOne({
+            _id: id,
+            role: "STAFF"
+        });
+
+        if (!staff) {
+            return res.status(404).json({
+                message: "Staff not found"
+            });
+        }
+
+        // 4. Remove duplicate service IDs
+        const uniqueServices = [
+            ...new Set(
+                services.map(
+                    serviceId => serviceId.toString()
+                )
+            )
+        ];
+
+        // 5. Check services exist and are active
+        const activeServices = await ServiceDetails.find({
+            _id: {
+                $in: uniqueServices
+            },
+            status: "ACTIVE"
+        }).select("_id");
+
+        if (
+            activeServices.length !==
+            uniqueServices.length
+        ) {
+            return res.status(400).json({
+                message:
+                    "One or more services are invalid or inactive"
+            });
+        }
+
+        // 6. Update services
+        const updatedStaff =
+            await UserDetails.findByIdAndUpdate(
+                id,
+                {
+                    $set: {
+                        services: uniqueServices
+                    }
+                },
+                {
+                    new: true,
+                    runValidators: false
+                }
+            )
+            .select("-password")
+            .populate(
+                "services",
+                "name description duration price status"
+            );
+
+        // 7. Response
+        return res.status(200).json({
+            message:
+                "Services assigned to staff successfully",
+            staff: updatedStaff
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Assign services error:",
+            error
+        );
+
+        return res.status(500).json({
+            message: "Failed to assign services",
+            error: error.message
+        });
+    }
+};
 
 // | Situation                         |                      Status |
 // | --------------------------------- | --------------------------: |
