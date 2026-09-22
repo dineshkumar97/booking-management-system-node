@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from 'bcryptjs';
-import { PutObjectCommand ,GetObjectCommand} from '@aws-sdk/client-s3';
+import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { s3Client } from '../config/s3.js';
 import UserDetails from "../models/userDetailsModel.js";
@@ -17,11 +17,18 @@ export const createUser = async (req, res) => {
             name,
             email,
             phone,
-            password,
-            role
+            designation,
+            status,
+            role,
+            password
         } = req.body;
 
+        const defaultPassword = password || "12345";
 
+        const hashedPassword = await bcrypt.hash(
+            defaultPassword,
+            10
+        );
         // Check existing email
         const existingUser = await UserDetails.findOne({
             email
@@ -75,10 +82,6 @@ export const createUser = async (req, res) => {
         // =====================================
         // Hash Password
         // =====================================
-
-        const hashedPassword =
-            await bcrypt.hash(password, 10);
-
 
         // =====================================
         // Create User
@@ -265,90 +268,36 @@ export const userDelete = async (req, res) => {
 };
 
 export const updateUsers = async (req, res) => {
-
     try {
-
-        // ==============================
-        // USER PERMISSION CHECK
-        // ==============================
-
-        const requestedUserId = req.params.idUser;
-
-        const loggedInUserId =
-            req.user._id.toString();
-
-        const loggedInRole =
-            req.user.role;
-
-        // CUSTOMER and STAFF
-        // can update only their own profile
-
-        // ADMIN
-        // can update any user
-
-        if (
-            loggedInRole !== 'ADMIN' &&
-            requestedUserId !== loggedInUserId
-        ) {
-            return res.status(403).json({
-                message:
-                    'You do not have permission to update this user.'
-            });
-        }
-
-
-        // ==============================
-        // EXISTING PROFILE UPDATE CODE
-        // ==============================
-
-        const {
-            name,
-            email,
-            phone
-        } = req.body;
+        const { name, email, phone,designation } = req.body;
 
         const updateData = {
             name,
             email,
-            phone
+            phone,designation
         };
-
-
-        // ==============================
-        // S3 PROFILE IMAGE
-        // ==============================
-
+        // Upload profile image to S3
         if (req.file) {
-
-            const fileName =
-                `uploadImages/${Date.now()}-${req.file.originalname}`;
-
+            const fileName = `uploadImages/${Date.now()}-${req.file.originalname}`;
             const command = new PutObjectCommand({
-                Bucket: process.env.S3_BUCKET_NAME,
+                Bucket: 'booking-management-system-images-upload',
                 Key: fileName,
                 Body: req.file.buffer,
                 ContentType: req.file.mimetype
             });
-
             await s3Client.send(command);
-
+            // Store only S3 key in MongoDB
             updateData.profileImage = fileName;
         }
 
-
-        // ==============================
-        // UPDATE USER
-        // ==============================
-
-        const user =
-            await UserDetails.findByIdAndUpdate(
-                req.params.idUser,
-                updateData,
-                {
-                    new: true,
-                    runValidators: true
-                }
-            );
+        const user = await UserDetails.findByIdAndUpdate(
+            req.params.idUser,
+            updateData,
+            {
+                new: true,
+                runValidators: true
+            }
+        );
 
         if (!user) {
             return res.status(404).json({
@@ -356,31 +305,21 @@ export const updateUsers = async (req, res) => {
             });
         }
 
-
-        // ==============================
-        // RESPONSE
-        // ==============================
-
         return res.status(200).json({
-            message:
-                'Profile has been updated successfully.',
+            message: 'Profile has been updated successfully.',
             data: {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
-                role: user?.role,
-                status: user.status,
+                designation:user.designation,
                 profileImage: user.profileImage || ''
             }
         });
 
     } catch (error) {
 
-        console.error(
-            'Update user error:',
-            error
-        );
+        console.error('Update user error:', error);
 
         return res.status(500).json({
             message: 'Something went wrong',
@@ -388,7 +327,6 @@ export const updateUsers = async (req, res) => {
         });
     }
 };
-
 
 
 export const getProfile = async (req, res) => {
@@ -521,11 +459,11 @@ export const assignServicesToStaff = async (req, res) => {
                     runValidators: false
                 }
             )
-            .select("-password")
-            .populate(
-                "services",
-                "name description duration price status"
-            );
+                .select("-password")
+                .populate(
+                    "services",
+                    "name description duration price status"
+                );
 
         // 7. Response
         return res.status(200).json({
