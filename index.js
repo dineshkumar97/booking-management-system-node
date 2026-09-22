@@ -24,7 +24,7 @@ app.use(express.urlencoded({
 
 app.use("/booking-management-systemt/user", userDetailsRouter);
 app.use("/booking-management-systemt/appointments",appointmentRouter);
-app.use("/booking-management-systemt/services",serviceRouter);
+app.use("/booking-management-systemt/service",serviceRouter);
 app.use("/booking-management-systemt/staff",staffRouter);
 
 

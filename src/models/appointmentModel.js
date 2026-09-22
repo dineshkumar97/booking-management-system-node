@@ -1,6 +1,4 @@
 import mongoose from "mongoose";
-// import UserDetails from "./userDetailsModel.js";
-// import Service from "./serviceModel.js";
 
 const appointmentSchema = new mongoose.Schema(
   {
@@ -53,7 +51,7 @@ const appointmentSchema = new mongoose.Schema(
       default: "PENDING"
     },
 
-    notes: {
+    comments: {
       type: String,
       default: ""
     }
