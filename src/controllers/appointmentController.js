@@ -12,7 +12,7 @@ export const createAppointment = async (req, res) => {
       appointmentDate,
       startTime,
       endTime,
-      comments
+      notes
     } = req.body;
 
     // 1. Validate request
@@ -97,7 +97,7 @@ export const createAppointment = async (req, res) => {
       startTime,
       endTime: endTime || "",
       status: "PENDING",
-      comments: notes || ""
+      notes: notes || ""
     });
 
     // 9. Response
@@ -113,7 +113,7 @@ export const createAppointment = async (req, res) => {
         startTime: appointment.startTime,
         endTime: appointment.endTime,
         status: appointment.status,
-        comments: appointment.notes
+        notes: appointment.notes
       }
     });
 
@@ -466,35 +466,37 @@ export const rejectAppointment = async (req, res) => {
     const appointmentId = req.params.id;
     const { comment } = req.body;
 
+    // 1. Validate appointment ID
     if (!mongoose.Types.ObjectId.isValid(appointmentId)) {
       return res.status(400).json({
         message: "Invalid appointment ID"
       });
     }
 
+    // 2. Validate comment
     if (!comment || !comment.trim()) {
       return res.status(400).json({
         message: "Rejection comment is required"
       });
     }
 
-    const appointment =
-      await Appointment.findOneAndUpdate(
-        {
-          _id: appointmentId,
-          staffId,
-          status: "PENDING"
-        },
-        {
-          $set: {
-            status: "REJECTED",
-            notes: comment.trim()
-          }
-        },
-        {
-          new: true
+    // 3. Reject only PENDING appointment
+    const appointment = await Appointment.findOneAndUpdate(
+      {
+        _id: appointmentId,
+        staffId,
+        status: "PENDING"
+      },
+      {
+        $set: {
+          status: "REJECTED",
+          notes: comment.trim()
         }
-      );
+      },
+      {
+        new: true
+      }
+    );
 
     if (!appointment) {
       return res.status(404).json({
@@ -513,9 +515,9 @@ export const rejectAppointment = async (req, res) => {
       "Reject appointment error:",
       error
     );
- 
+
     return res.status(500).json({
-      message: error.message,
+      message: "Failed to reject appointment"
     });
   }
 };
