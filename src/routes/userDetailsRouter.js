@@ -17,6 +17,10 @@ import {
     forgotPassword, resetPassword
 } from "../controllers/forgotPasswordController.js";
 
+import {
+    sendLoginOtp,
+    verifyLoginOtp
+} from "../controllers/otpController.js";
 const router = express.Router();
 router.post("/create", createUser);
 router.put('/update/:idUser', upload.single('profileImage'), updateUsers);
@@ -28,6 +32,8 @@ router.post("/reset-password", resetPassword);
 router.delete('/delete/:idUser', userDelete);
 
 router.put("/staff/assign/:id/services",verifyToken,assignServicesToStaff);
+router.post("/send-login-otp",sendLoginOtp);
+router.post("/verify-login-otp",verifyLoginOtp);
 export default router;
 
 

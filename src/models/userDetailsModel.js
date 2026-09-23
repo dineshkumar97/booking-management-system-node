@@ -62,7 +62,14 @@ const userDetailsSchema = new mongoose.Schema({
         type: String,
         default: null
     },
-
+    otp: {
+        type: String,
+        default: ""
+    },
+    otpExpiresAt: {
+        type: Date,
+        default: null
+    },
     resetPasswordExpires: {
         type: Date,
         default: null

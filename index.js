@@ -9,6 +9,7 @@ import userDetailsRouter from "./src/routes/userDetailsRouter.js";
 import appointmentRouter from "./src/routes/appointmentRouter.js";
 import serviceRouter from "./src/routes/serviceRouter.js";
 import staffRouter from "./src/routes/staffRouter.js";
+// import "./src/cronJobs/job.js";
 setServers(["1.1.1.1", "8.8.8.8"]);
 
 const mongooseString = process.env.DATABASE_URL;
@@ -41,7 +42,6 @@ app.use("/booking-management-systemt/appointments",appointmentRouter);
 app.use("/booking-management-systemt/service",serviceRouter);
 app.use("/booking-management-systemt/staff",staffRouter);
 
-
 // MongoDB connection
 mongoose.connect(mongooseString)
   .then(() => {
@@ -51,13 +51,13 @@ mongoose.connect(mongooseString)
     console.log("Database connection error:", err);
   });
 
-const PORT = process.env.PORT || 3000;
+/* const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server started on port ${PORT}`);
-})
+}) */
 
 //Server Code
-/* app.get("/", (req, res) => {
+app.get("/", (req, res) => {
   res.json({
     success: true,
     message: "Node.js Express Lambda API is working"
@@ -76,4 +76,29 @@ const serverlessHandler = serverless(app, {
 
 export const handler = async (event, context) => {
   return await serverlessHandler(event, context);
-}; */
+};
+
+
+
+// | #         | Concept            | What you learn                   |
+// | --------- | ------------------ | -------------------------------- |
+// | ✅ 1       | Express basics     | Routes, middleware, controllers  |
+// | ✅ 2       | MongoDB + Mongoose | Models, queries, populate        |
+// | ✅ 3       | Authentication     | JWT, password hashing            |
+// | ✅ 4       | Authorization      | Roles: CUSTOMER/STAFF/ADMIN      |
+// | ✅ 5       | Error handling     | Centralized error handling       |
+// | ✅ 6       | File upload        | Multer + S3                      |
+// | ✅ 7       | Email              | Nodemailer + templates           |
+// | ✅ 8       | Cron jobs          | `node-cron`                      |
+// | ✅ 9       | Transactions       | MongoDB transactions             |
+// | ✅ 10      | Atomic booking     | Unique indexes / race conditions |
+// | ✅ 11      | Redis              | Cache + locks                    |
+// | ✅ 12      | Queue              | BullMQ concepts                  |
+// | **➡️ 13** | **Rate limiting**  | Protect APIs                     |
+// | 14        | API security       | Helmet, validation, sanitization |
+// | 15        | Logging            | Winston/Pino                     |
+// | 16        | API documentation  | Swagger/OpenAPI                  |
+// | 17        | Testing            | Jest + Supertest                 |
+// | 18        | WebSockets         | Socket.IO                        |
+// | 19        | Graceful shutdown  | Production server handling       |
+// | 20        | Monitoring         | Health checks + AWS CloudWatch   |

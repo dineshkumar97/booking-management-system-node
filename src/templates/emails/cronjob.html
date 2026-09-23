@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Our Organization</title>
+</head>
+
+<body style="
+    margin:0;
+    padding:0;
+    background:#f4f6f8;
+">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+        <td align="center" style="padding:30px 15px;">
+
+            <table width="600"
+                   cellpadding="0"
+                   cellspacing="0"
+                   border="0"
+                   style="
+                       width:100%;
+                       max-width:600px;
+                       background:#ffffff;
+                       border-radius:8px;
+                       overflow:hidden;
+                       font-family:Arial,sans-serif;
+                   ">
+
+                <!-- Header -->
+                <tr>
+                    <td style="
+                        background:#2563eb;
+                        padding:25px;
+                        text-align:center;
+                    ">
+                        <h1 style="
+                            margin:0;
+                            color:#ffffff;
+                            font-size:24px;
+                        ">
+                            Welcome to Our Organization
+                        </h1>
+                    </td>
+                </tr>
+
+                <!-- Content -->
+                <tr>
+                    <td style="padding:30px;">
+
+                        <p style="
+                            color:#333333;
+                            font-size:16px;
+                            margin-top:0;
+                        ">
+                            Hello <strong>{{name}}</strong>,
+                        </p>
+
+                        <p style="
+                            color:#555555;
+                            font-size:15px;
+                            line-height:1.6;
+                        ">
+                            Welcome! Your employee account has been
+                            successfully registered with our organization.
+                        </p>
+
+                        <p style="
+                            color:#555555;
+                            font-size:15px;
+                            line-height:1.6;
+                        ">
+                            Here are your account details:
+                        </p>
+
+                        <!-- Employee Details -->
+                        <table width="100%"
+                               cellpadding="10"
+                               cellspacing="0"
+                               border="0"
+                               style="
+                                   background:#f8fafc;
+                                   border-radius:6px;
+                                   margin:20px 0;
+                               ">
+
+                            <tr>
+                                <td width="40%" style="color:#555555;">
+                                    <strong>Employee ID</strong>
+                                </td>
+                                <td style="color:#555555;">
+                                    {{employeeId}}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="color:#555555;">
+                                    <strong>Name</strong>
+                                </td>
+                                <td style="color:#555555;">
+                                    {{name}}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="color:#555555;">
+                                    <strong>Email</strong>
+                                </td>
+                                <td style="color:#555555;">
+                                    {{email}}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="color:#555555;">
+                                    <strong>Department</strong>
+                                </td>
+                                <td style="color:#555555;">
+                                    {{department}}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="color:#555555;">
+                                    <strong>Joining Date</strong>
+                                </td>
+                                <td style="color:#555555;">
+                                    {{joiningDate}}
+                                </td>
+                            </tr>
+
+                        </table>
+
+                        <!-- Login Button -->
+                        <p style="
+                            color:#555555;
+                            font-size:14px;
+                            line-height:1.6;
+                        ">
+                            Please use your registered email address and
+                            password to access the employee portal.
+                        </p>
+
+                        <p style="
+                            color:#555555;
+                            font-size:14px;
+                            line-height:1.6;
+                        ">
+                            If you have any questions, please contact the
+                            HR team.
+                        </p>
+
+                        <p style="
+                            color:#444444;
+                            font-size:14px;
+                            margin-top:30px;
+                        ">
+                            Regards,<br>
+                            <strong>HR Team</strong>
+                        </p>
+
+                    </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                    <td style="
+                        background:#f8fafc;
+                        padding:18px;
+                        text-align:center;
+                        color:#888888;
+                        font-size:12px;
+                    ">
+                        © 2026 Our Organization. All rights reserved.
+                    </td>
+                </tr>
+
+            </table>
+
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>
