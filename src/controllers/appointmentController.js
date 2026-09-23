@@ -239,12 +239,7 @@ export const cancelAppointment = async (req, res) => {
     const { id } = req.params;
 
     // 1. Validate appointment ID
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        message: "Invalid appointment ID"
-      });
-    }
-
+  
     // 2. Get logged-in customer
     const customerId = req.user.id;
 
@@ -490,7 +485,7 @@ export const rejectAppointment = async (req, res) => {
       {
         $set: {
           status: "REJECTED",
-          notes: comment.trim()
+          comments: comment.trim()
         }
       },
       {

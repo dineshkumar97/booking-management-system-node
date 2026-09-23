@@ -58,13 +58,25 @@ const userDetailsSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    resetPasswordToken: {
+        type: String,
+        default: null
+    },
+
+    resetPasswordExpires: {
+        type: Date,
+        default: null
+    },
     services: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Service"
         }
-    ]
-});
+    ],
+},
+    {
+        timestamps: true
+    });
 
 const UserDetails = mongoose.model(
     "UserDetails",
