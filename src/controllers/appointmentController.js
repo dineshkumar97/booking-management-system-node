@@ -5,128 +5,161 @@ import Appointment from "../models/appointmentModel.js";
 // CUSTOMER - CREATE APPOINTMENT
 // =====================================================
 export const createAppointment = async (req, res) => {
-  try {
-    const {
-      serviceId,
-      staffId,
-      appointmentDate,
-      startTime,
-      endTime,
-      notes
-    } = req.body;
-
-    // 1. Validate request
-    if (
-      !serviceId ||
-      !staffId ||
-      !appointmentDate ||
-      !startTime
-    ) {
-      return res.status(400).json({
-        message: "Service, staff, date and start time are required"
-      });
-    }
-
-    // 2. Get logged-in customer
-    const customerId = req.user.id;
-
-    // 3. Validate customer ID
-    if (!mongoose.Types.ObjectId.isValid(customerId)) {
-      return res.status(400).json({
-        message: "Invalid customer ID"
-      });
-    }
-
-    // 4. Validate service ID
-    if (!mongoose.Types.ObjectId.isValid(serviceId)) {
-      return res.status(400).json({
-        message: "Invalid service ID"
-      });
-    }
-
-    // 5. Validate staff ID
-    if (!mongoose.Types.ObjectId.isValid(staffId)) {
-      return res.status(400).json({
-        message: "Invalid staff ID"
-      });
-    }
-
-    // 6. Check whether slot is already booked
-    const existingAppointment = await Appointment.findOne({
-      staffId,
-      appointmentDate: new Date(appointmentDate),
-      startTime,
-      status: {
-        $in: ["PENDING", "CONFIRMED"]
-      }
-    });
-
-    if (existingAppointment) {
-      return res.status(409).json({
-        message: "This time slot is already booked"
-      });
-    }
-
-    // 7. Generate unique Order ID
-    const lastAppointment = await Appointment
-      .findOne({
-        orderId: {
-          $regex: /^BMS\d+$/
+    try {
+        const {
+            serviceId,
+            staffId,
+            appointmentDate,
+            startTime,
+            endTime,
+            notes
+        } = req.body;
+        // 1. Validate request
+        if (
+            !serviceId ||
+            !staffId ||
+            !appointmentDate ||
+            !startTime
+        ) {
+            return res.status(400).json({
+                message:
+                    "Service, staff, date and start time are required"
+            });
         }
-      })
-      .sort({
-        orderId: -1
-      });
-    let orderId = "BMS000001";
-    if (lastAppointment?.orderId) {
-      const lastNumber = parseInt(
-        lastAppointment.orderId.replace("BMS", ""),
-        10
-      );
-      orderId =
-        `BMS${String(lastNumber + 1).padStart(6, "0")}`;
+        // 2. Get logged-in customer
+        const customerId =
+            req.user._id.toString();
+        // 3. Validate customer ID
+        if (
+            !mongoose.Types.ObjectId.isValid(
+                customerId
+            )
+        ) {
+            return res.status(400).json({
+                message: "Invalid customer ID"
+            });
+        }
+        // 4. Validate service ID
+        if (
+            !mongoose.Types.ObjectId.isValid(
+                serviceId
+            )
+        ) {
+            return res.status(400).json({
+                message: "Invalid service ID"
+            });
+        }
+        // 5. Validate staff ID
+        if (
+            !mongoose.Types.ObjectId.isValid(
+                staffId
+            )
+        ) {
+            return res.status(400).json({
+                message: "Invalid staff ID"
+            });
+        }
+        // 6. Check whether slot is already booked
+        const existingAppointment =
+            await Appointment.findOne({
+                staffId,
+                appointmentDate:
+                    new Date(appointmentDate),
+                startTime,
+                status: {
+                    $in: [
+                        "PENDING",
+                        "CONFIRMED"
+                    ]
+                }
+            });
+        if (existingAppointment) {
+            return res.status(409).json({
+                message:
+                    "This time slot is already bookedp"
+            });
+        }
+        // 7. Generate unique Order ID
+        const lastAppointment =
+            await Appointment
+                .findOne({
+                    orderId: {
+                        $regex: /^BMSOR\d+$/
+                    }
+                })
+                .sort({
+                    orderId: -1
+                });
+        let orderId = "BMSOR000001";
+        if (lastAppointment?.orderId) {
+            const lastNumber =
+                parseInt(
+                    lastAppointment.orderId
+                        .replace("BMS", ""),
+                    10
+                );
+            orderId =
+                `BMSOR${String(
+                    lastNumber + 1
+                ).padStart(6, "0")}`;
+        }
+        // 8. Create appointment
+        const appointment =
+            await Appointment.create({
+                orderId,
+                customerId,
+                serviceId,
+                staffId,
+                appointmentDate:
+                    new Date(appointmentDate),
+                startTime,
+                endTime: endTime || "",
+                status: "PENDING",
+                notes: notes || ""
+            });
+        // 9. Response
+        return res.status(201).json({
+            message:
+                "Appointment booked successfully",
+            data: {
+                id: appointment._id,
+                orderId:
+                    appointment.orderId,
+                customerId:
+                    appointment.customerId,
+                serviceId:
+                    appointment.serviceId,
+                staffId:
+                    appointment.staffId,
+                appointmentDate:
+                    appointment.appointmentDate,
+                startTime:
+                    appointment.startTime,
+                endTime:
+                    appointment.endTime,
+                status:
+                    appointment.status,
+                notes:
+                    appointment.notes
+            }
+        });
+    } catch (error) {
+        console.error(
+            "Create appointment error:",
+            error
+        );
+        // MongoDB duplicate key
+        if (error.code === 11000) {
+            return res.status(409).json({
+                message:
+                    "This time slot is already booked?"
+            });
+        }
+        return res.status(500).json({
+            message:
+                "Failed to create appointment"
+        });
     }
-
-    // 8. Create appointment
-    const appointment = await Appointment.create({
-      orderId,
-      customerId,
-      serviceId,
-      staffId,
-      appointmentDate: new Date(appointmentDate),
-      startTime,
-      endTime: endTime || "",
-      status: "PENDING",
-      notes: notes || ""
-    });
-
-    // 9. Response
-    return res.status(201).json({
-      message: "Appointment booked successfully",
-      data: {
-        id: appointment._id,
-        orderId: appointment.orderId,
-        customerId: appointment.customerId,
-        serviceId: appointment.serviceId,
-        staffId: appointment.staffId,
-        appointmentDate: appointment.appointmentDate,
-        startTime: appointment.startTime,
-        endTime: appointment.endTime,
-        status: appointment.status,
-        notes: appointment.notes
-      }
-    });
-
-  } catch (error) {
-    console.error(
-      "Create appointment error:",
-      error
-    );
-
-    return res.status(500).json({
-      message: "Failed to create appointment"
-    });
-  }
 };
 
 
