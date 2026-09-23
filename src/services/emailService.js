@@ -111,3 +111,87 @@ export const sendSignupCreatedEmail = async ({ name, email }) => {
         });
 
 };
+
+
+export const sendEmailJob = async () => {
+    try {
+        const templatePath = path.join(
+            __dirname,
+            "../templates/emails/cronjob.html"
+        );
+
+        const formattedDate = new Date()
+            .toLocaleDateString("en-GB")
+            .replaceAll("/", "-");
+
+        let html = await fs.readFile(
+            templatePath,
+            "utf-8"
+        );
+
+        html = html
+            .replaceAll("{{name}}", "dinesh")
+            .replaceAll("{{employeeId}}", "BMS00010")
+            .replaceAll("{{department}}", "CSSE")
+            .replaceAll("{{email}}", "dinesh@hmail.com")
+            .replaceAll(
+                "{{joiningDate}}",
+                formattedDate
+            );
+
+        await transporter.sendMail({
+            from: `"HR Team" <${process.env.EMAIL_USER}>`,
+            to: "dineshkumarppn07@gmail.com",
+            subject: "Cron Job Created",
+            html
+        });
+
+        console.log(
+            "Employee created email sent successfully"
+        );
+
+    } catch (error) {
+        console.error(
+            "Employee email failed:",
+            error
+        );
+
+        throw error;
+    }
+};
+
+
+
+
+export const otpEmailSend = async ({ name, otp }) => {
+    const templatePath = path.join(
+        __dirname,
+        "../templates/emails/login-otp.html"
+    );
+
+    let html = await fs.readFile(templatePath, "utf-8");
+    // Replace dynamic values
+      html = html
+            .replaceAll(
+                "{{name}}",
+                name
+            )
+            .replaceAll(
+                "{{otp}}",
+                otp
+            );
+    await transporter.sendMail({
+        from: `"HR Team" <${process.env.EMAIL_USER}>`,
+        to: 'dineshkumarppn0@gmail.com',
+        subject: "Welcome! Your Account Has Been Created",
+        html
+    }).then(() => {
+        console.log('Account created email sent successfully');
+    })
+        .catch((error) => {
+            console.error('Account email failed:', error);
+        });
+
+};
+
+

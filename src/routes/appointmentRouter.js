@@ -14,7 +14,7 @@ const router = express.Router();
 router.post("/create", verifyToken, createAppointment);
 router.get("/all", verifyToken, getCustomerAppointments);
 router.get("/get/:id", verifyToken, getCustomerAppointmentById);
-router.patch("/booking/:id/cancel", verifyToken, cancelAppointment);
+router.put("/booking/:id/cancel", verifyToken,authorizeRoles('CUSTOMER'), cancelAppointment);
 router.get("/staffAppointment", verifyToken, authorizeRoles('STAFF'), getStaffAppointments);
 router.get("/staff/:id", verifyToken, authorizeRoles('STAFF'), getStaffAppointmentById);
 router.put("/staff/:id/confirm", verifyToken, authorizeRoles('STAFF'), confirmAppointment);
