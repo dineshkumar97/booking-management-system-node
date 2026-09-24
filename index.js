@@ -1,70 +1,160 @@
 import "dotenv/config";
 import express from "express";
 import mongoose from "mongoose";
+import helmet from "helmet";
 import cors from "cors";
 import { setServers } from "node:dns/promises";
 import serverless from "serverless-http";
+import { createServer } from "node:http";
+import { Server } from "socket.io";
 
 import userDetailsRouter from "./src/routes/userDetailsRouter.js";
 import appointmentRouter from "./src/routes/appointmentRouter.js";
 import serviceRouter from "./src/routes/serviceRouter.js";
 import staffRouter from "./src/routes/staffRouter.js";
-// import "./src/cronJobs/job.js";
+import { errorHandler } from "./src/middleware/errorHandler.js";
+import { requestLogger } from "./src/middleware/requestLogger.js";
+import { initializeSocket } from "./socket-server.js";
+
 setServers(["1.1.1.1", "8.8.8.8"]);
 
-const mongooseString = process.env.DATABASE_URL;
-
 const app = express();
-
-// ===============================
+app.use(requestLogger);
+app.use(helmet());
+// =====================================================
 // CORS
-// ===============================
+// =====================================================
+
+const allowedOrigins = [
+  "http://localhost:4200",
+  "https://main.d278yotn95mf53.amplifyapp.com"
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:4200",
-      "https://main.d278yotn95mf53.amplifyapp.com"
+    origin: allowedOrigins,
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS"
     ],
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization"
+    ],
     credentials: true
   })
 );
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({
-    extended: true,
-    limit: '10mb'
-}));
+// =====================================================
+// BODY PARSER
+// =====================================================
 
-app.use("/booking-management-systemt/user", userDetailsRouter);
-app.use("/booking-management-systemt/appointments",appointmentRouter);
-app.use("/booking-management-systemt/service",serviceRouter);
-app.use("/booking-management-systemt/staff",staffRouter);
-
-// MongoDB connection
-mongoose.connect(mongooseString)
-  .then(() => {
-    console.log("Database connected successfully");
+app.use(
+  express.json({
+    limit: "10mb"
   })
-  .catch((err) => {
-    console.log("Database connection error:", err);
-  });
+);
 
-/* const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server started on port ${PORT}`);
-}) */
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "10mb"
+  })
+);
 
-//Server Code
+// =====================================================
+// ROUTES
+// =====================================================
+
+app.use(
+  "/booking-management-systemt/user",
+  userDetailsRouter
+);
+
+app.use(
+  "/booking-management-systemt/appointments",
+  appointmentRouter
+);
+
+app.use(
+  "/booking-management-systemt/service",
+  serviceRouter
+);
+
+app.use(
+  "/booking-management-systemt/staff",
+  staffRouter
+);
+
+app.use(errorHandler);
+// =====================================================
+// HEALTH CHECK
+// =====================================================
+
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "Node.js Express Lambda API is working"
-  },
-console.log('Express Lambda API is working')
-);
+    message: "Node.js Express API is working"
+  });
 });
+
+// =====================================================
+// MONGODB
+// =====================================================
+
+let dbConnectionPromise;
+
+const connectDatabase = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
+
+  if (!dbConnectionPromise) {
+    dbConnectionPromise = mongoose
+      .connect(process.env.DATABASE_URL)
+      .then(() => {
+        console.log(
+          "MongoDB connected successfully"
+        );
+      })
+      .catch((error) => {
+        dbConnectionPromise = null;
+
+        console.error(
+          "MongoDB connection error:",
+          error
+        );
+
+        throw error;
+      });
+  }
+
+  await dbConnectionPromise;
+};
+
+// =====================================================
+// SOCKET.IO
+// =====================================================
+
+const httpServer = createServer(app);
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+// initializeSocket(io);
+
+// =====================================================
+// LAMBDA HANDLER
+// =====================================================
 
 const serverlessHandler = serverless(app, {
   binary: [
@@ -74,31 +164,46 @@ const serverlessHandler = serverless(app, {
   ]
 });
 
-export const handler = async (event, context) => {
-  return await serverlessHandler(event, context);
+export const handler = async (
+  event,
+  context
+) => {
+  context.callbackWaitsForEmptyEventLoop = false;
+
+  await connectDatabase();
+
+  return serverlessHandler(
+    event,
+    context
+  );
 };
 
+// =====================================================
+// LOCAL SERVER
+// =====================================================
 
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 3000;
 
-// | #         | Concept            | What you learn                   |
-// | --------- | ------------------ | -------------------------------- |
-// | ✅ 1       | Express basics     | Routes, middleware, controllers  |
-// | ✅ 2       | MongoDB + Mongoose | Models, queries, populate        |
-// | ✅ 3       | Authentication     | JWT, password hashing            |
-// | ✅ 4       | Authorization      | Roles: CUSTOMER/STAFF/ADMIN      |
-// | ✅ 5       | Error handling     | Centralized error handling       |
-// | ✅ 6       | File upload        | Multer + S3                      |
-// | ✅ 7       | Email              | Nodemailer + templates           |
-// | ✅ 8       | Cron jobs          | `node-cron`                      |
-// | ✅ 9       | Transactions       | MongoDB transactions             |
-// | ✅ 10      | Atomic booking     | Unique indexes / race conditions |
-// | ✅ 11      | Redis              | Cache + locks                    |
-// | ✅ 12      | Queue              | BullMQ concepts                  |
-// | **➡️ 13** | **Rate limiting**  | Protect APIs                     |
-// | 14        | API security       | Helmet, validation, sanitization |
-// | 15        | Logging            | Winston/Pino                     |
-// | 16        | API documentation  | Swagger/OpenAPI                  |
-// | 17        | Testing            | Jest + Supertest                 |
-// | 18        | WebSockets         | Socket.IO                        |
-// | 19        | Graceful shutdown  | Production server handling       |
-// | 20        | Monitoring         | Health checks + AWS CloudWatch   |
+  connectDatabase()
+    .then(() => {
+      httpServer.listen(
+        PORT,
+        () => {
+          console.log(
+            `Local server running: http://localhost:${PORT}`
+          );
+
+          console.log(
+            `Socket.IO running: http://localhost:${PORT}`
+          );
+        }
+      );
+    })
+    .catch((error) => {
+      console.error(
+        "Failed to start local server:",
+        error
+      );
+    });
+}

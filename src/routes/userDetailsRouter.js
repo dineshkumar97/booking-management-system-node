@@ -1,5 +1,6 @@
 import express from "express";
 import { upload } from '../middleware/uploadMiddleware.js';
+import { loginRateLimiter } from '../middleware/rateLimit.js';
 import verifyToken, {
   authorizeRoles
 } from '../middleware/verifyToken.js';
@@ -11,26 +12,26 @@ import {
     updateUsers,
     getProfile,
     assignServicesToStaff
-    
 } from "../controllers/userDetailsController.js";
 import {
     forgotPassword, resetPassword
 } from "../controllers/forgotPasswordController.js";
-
 import {
     sendLoginOtp,
     verifyLoginOtp
 } from "../controllers/otpController.js";
+// import { loginSchema } from "../validations/userValidation.js";
+
 const router = express.Router();
 router.post("/create", createUser);
 router.put('/update/:idUser', upload.single('profileImage'), updateUsers);
 router.get('/profile/:idUser', getProfile);
 router.get("/all", getUsers);
-router.post('/authenticate', authenticate);
+// router.post('/authenticate',loginRateLimiter, validate(loginSchema), authenticate);
+router.post('/authenticate',loginRateLimiter,  authenticate);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.delete('/delete/:idUser', userDelete);
-
 router.put("/staff/assign/:id/services",verifyToken,assignServicesToStaff);
 router.post("/send-login-otp",sendLoginOtp);
 router.post("/verify-login-otp",verifyLoginOtp);
@@ -38,18 +39,15 @@ export default router;
 
 
 
+
+
 // Role
 /* "role": "ADMIN",
 "role": "STAFF",
 "role": "CUSTOMER", */
-
 /* admin@gmail.com
 staff@gmail.com
 customer@gmail.com */
-
-
-
-
 /* 
 backend/
 │
@@ -98,8 +96,6 @@ backend/
 ├── server.js
 ├── .env
 └── package.json */
-
-
 // DB
 /* Customers
 Services

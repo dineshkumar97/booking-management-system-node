@@ -48,7 +48,7 @@ export const sendLoginOtp = async (req, res) => {
 
         // OTP expires after 5 minutes
         const expiresAt = new Date(
-            Date.now() + 5 * 60 * 1000
+            Date.now() +  1* 60 * 1000
         );
 
         // Save OTP
@@ -68,9 +68,6 @@ export const sendLoginOtp = async (req, res) => {
         );
 
         // Send OTP email
-        console.log('jjj', user)
-        // await otpEmailSend(user,html);
-        // await otpEmailSend(user, otp);
         await otpEmailSend({
             name: user.name,
             // email: user.email,

@@ -5,14 +5,13 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { s3Client } from '../config/s3.js';
 import UserDetails from "../models/userDetailsModel.js";
 import ServiceDetails from "../models/serviceModel.js";
-
 import generationToken from "../tokengeneration/generationToken.js";
 import { sendSignupCreatedEmail } from "../services/emailService.js";
+import StaffDetails from "../models/staffModel.js";
 
 
-export const createUser = async (req, res) => {
+export const createUser = async  (req, res, next) => {
     try {
-
         const {
             name,
             email,
@@ -22,9 +21,7 @@ export const createUser = async (req, res) => {
             role,
             password
         } = req.body;
-
         const defaultPassword = password || "12345";
-
         const hashedPassword = await bcrypt.hash(
             defaultPassword,
             10
@@ -33,14 +30,11 @@ export const createUser = async (req, res) => {
         const existingUser = await UserDetails.findOne({
             email
         });
-
         if (existingUser) {
             return res.status(409).json({
                 message: 'User Already Exists'
             });
         }
-
-
         // Allow only CUSTOMER / STAFF
         const userRole =
             role === 'ADMIN'
@@ -48,11 +42,9 @@ export const createUser = async (req, res) => {
                 : role === 'STAFF'
                     ? 'STAFF'
                     : 'CUSTOMER';
-
         // =====================================
         // Generate Unique User ID
         // =====================================
-
         const lastUser = await UserDetails
             .findOne({
                 uniqueUserId: {
@@ -62,56 +54,37 @@ export const createUser = async (req, res) => {
             .sort({
                 uniqueUserId: -1
             });
-
-
         let uniqueUserId = "BSM000001";
-
-
         if (lastUser?.uniqueUserId) {
-
             const lastNumber = parseInt(
                 lastUser.uniqueUserId.replace("BSM", ""),
                 10
             );
-
             uniqueUserId =
                 `BSM${String(lastNumber + 1).padStart(6, "0")}`;
         }
-
-
         // =====================================
         // Hash Password
         // =====================================
-
         // =====================================
         // Create User
         // =====================================
-
         const newUser = new UserDetails({
             name,
-            email,
+            // email,
             phone,
             password: hashedPassword,
             role: userRole,
             uniqueUserId
         });
-
-
         await newUser.save();
-
-
         // Signup Email
         await sendSignupCreatedEmail(newUser);
-
-
         // =====================================
         // Response
         // =====================================
-
         return res.status(201).json({
-
             message: 'Signup successfully',
-
             data: {
                 id: newUser._id,
                 name: newUser.name,
@@ -120,100 +93,53 @@ export const createUser = async (req, res) => {
                 role: newUser.role,
                 uniqueUserId: newUser.uniqueUserId
             }
-
         });
-
     } catch (error) {
-
-        console.error(error);
-
-        return res.status(500).json({
-            message: error.message
-        });
+        next(error);
     }
 };
-
-
-
-export const getUsers = async (req, res) => {
+export const getUsers = async  (req, res, next) => {
     try {
         const users = await UserDetails.find();
-
         res.status(200).json(users);
-
     } catch (error) {
-        console.error(error);
-
-        res.status(500).json({
-            message: "Failed to get users"
-        });
+        next(error);
     }
 };
 
-
-
-// export const authenticate = async (req, res) => {
-//     try {
-//         const { email, password } = req.body;
-//         const user = await UserDetails.findOne({ email });
-//         if (!user) {
-//             return res.status(400).json({ message: 'Invalid email format' });
-//         }
-//         const isMatch = await bcrypt.compare(password, user.password);
-//         if (!isMatch) {
-//             return res.status(400).json({ message: 'InCorrect Password' });
-//         }
-//         // const token = generationToken(user);
-//         const message = {
-//             // token:token,
-//             message: 'Login Successfully...'
-//         }
-//         res.json(message)
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json({
-//             message: error.message
-//         });
-//     }
-// }
-
-export const authenticate = async (req, res) => {
+export const authenticate = async  (req, res, next) => {
     try {
         const { email, password } = req.body;
-
         // 1. Find user by email
         const user = await UserDetails.findOne({ email });
-
         // 2. Email not found
         if (!user) {
             return res.status(401).json({
                 message: "Invalid email or password"
             });
         }
-
         // 3. Compare password
         const isMatch = await bcrypt.compare(
             password,
             user.password
         );
-
         // 4. Password doesn't match
         if (!isMatch) {
             return res.status(401).json({
                 message: "Invalid email or password"
             });
         }
-
         // 5. Check user status
         if (user.status !== "ACTIVE") {
             return res.status(403).json({
                 message: "User account is inactive"
             });
         }
-
         // 6. Generate JWT
         const token = generationToken(user);
-
+        const staff = await StaffDetails.findOne({
+            uniqueUserId: user.uniqueUserId
+        });
         // 7. User details
         const userDetails = {
             _id: user._id,
@@ -221,60 +147,52 @@ export const authenticate = async (req, res) => {
             email: user.email,
             phone: user.phone,
             role: user?.role,
-            status: user.status
-        };
+            status: user.status,
+            uniqueUserId: user.uniqueUserId,
+            availabilityStatus:
+                staff?.availabilityStatus || 'available',
 
+            onlineStatus:
+                staff?.onlineStatus || 'offline'
+        };
         // 8. Login successful
         return res.status(200).json({
             message: "Login successful",
             token: token,
             data: userDetails
         });
-
     } catch (error) {
-
-        console.error("Authentication error:", error);
-
-        return res.status(500).json({
-            message: error.message
-        });
+        next(error);
     }
 };
 
-export const userDelete = async (req, res) => {
+export const userDelete = async  (req, res, next) => {
     try {
         const { idUser } = req.params;
-
         const user = await UserDetails.findByIdAndDelete(idUser);
-
         if (!user) {
             return res.status(404).json({
                 message: 'user not found'
             });
         }
-
         return res.status(200).json({
             message: 'user deleted successfully',
             data: user
         });
-
     } catch (error) {
         console.error('Delete user error:', error);
+        next(error);
 
-        return res.status(500).json({
-            message: 'Failed to delete department'
-        });
     }
 };
 
-export const updateUsers = async (req, res) => {
+export const updateUsers = async  (req, res, next) => {
     try {
-        const { name, email, phone,designation } = req.body;
-
+        const { name, email, phone, designation } = req.body;
         const updateData = {
             name,
             email,
-            phone,designation
+            phone, designation
         };
         // Upload profile image to S3
         if (req.file) {
@@ -289,7 +207,6 @@ export const updateUsers = async (req, res) => {
             // Store only S3 key in MongoDB
             updateData.profileImage = fileName;
         }
-
         const user = await UserDetails.findByIdAndUpdate(
             req.params.idUser,
             updateData,
@@ -298,13 +215,14 @@ export const updateUsers = async (req, res) => {
                 runValidators: true
             }
         );
-
+        const staff = await StaffDetails.findOne({
+            uniqueUserId: user.uniqueUserId
+        });
         if (!user) {
             return res.status(404).json({
                 message: 'User not found'
             });
         }
-
         return res.status(200).json({
             message: 'Profile has been updated successfully.',
             data: {
@@ -312,44 +230,36 @@ export const updateUsers = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
-                designation:user.designation,
-                profileImage: user.profileImage || ''
+                designation: user.designation,
+                profileImage: user.profileImage || '',
+                availabilityStatus:
+                    staff?.availabilityStatus || 'available',
+                onlineStatus:
+                    staff?.onlineStatus || 'offline'
             }
         });
-
     } catch (error) {
-
         console.error('Update user error:', error);
+        next(error);
 
-        return res.status(500).json({
-            message: 'Something went wrong',
-            error: error.message
-        });
     }
 };
 
-
-export const getProfile = async (req, res) => {
+export const getProfile = async  (req, res, next) => {
     try {
-
         const user = await UserDetails.findById(req.params.idUser);
-
         if (!user) {
             return res.status(404).json({
                 message: 'User not found'
             });
         }
-
         // Generate S3 URL
         let profileImage = '';
-
         if (user.profileImage) {
-
             const command = new GetObjectCommand({
                 Bucket: process.env.S3_BUCKET_NAME,
                 Key: user.profileImage
             });
-
             profileImage = await getSignedUrl(
                 s3Client,
                 command,
@@ -358,10 +268,11 @@ export const getProfile = async (req, res) => {
                 }
             );
         }
-
+        const staff = await StaffDetails.findOne({
+            uniqueUserId: user.uniqueUserId
+        });
         return res.status(200).json({
             message: 'Profile fetched successfully',
-
             data: {
                 _id: user._id,
                 name: user.name,
@@ -370,54 +281,47 @@ export const getProfile = async (req, res) => {
                 role: user?.role,
                 status: user.status,
                 // IMPORTANT
-                profileImage: profileImage
+                profileImage: profileImage,
+                uniqueUserId: user.uniqueUserId,
+                availabilityStatus:
+                    staff?.availabilityStatus || 'available',
+                onlineStatus:
+                    staff?.onlineStatus || 'offline'
             }
         });
-
     } catch (error) {
-
         console.error('Get profile error:', error);
+        next(error);
 
-        return res.status(500).json({
-            message: 'Something went wrong',
-            error: error.message
-        });
     }
 };
 
-
-export const assignServicesToStaff = async (req, res) => {
+export const assignServicesToStaff = async  (req, res, next) => {
     try {
-
         const { id } = req.params;
         const { services } = req.body;
-
         // 1. Validate staff ID
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({
                 message: "Invalid staff ID"
             });
         }
-
         // 2. Validate services
         if (!Array.isArray(services)) {
             return res.status(400).json({
                 message: "Services must be an array"
             });
         }
-
         // 3. Check staff
         const staff = await UserDetails.findOne({
             _id: id,
             role: "STAFF"
         });
-
         if (!staff) {
             return res.status(404).json({
                 message: "Staff not found"
             });
         }
-
         // 4. Remove duplicate service IDs
         const uniqueServices = [
             ...new Set(
@@ -426,7 +330,6 @@ export const assignServicesToStaff = async (req, res) => {
                 )
             )
         ];
-
         // 5. Check services exist and are active
         const activeServices = await ServiceDetails.find({
             _id: {
@@ -434,7 +337,6 @@ export const assignServicesToStaff = async (req, res) => {
             },
             status: "ACTIVE"
         }).select("_id");
-
         if (
             activeServices.length !==
             uniqueServices.length
@@ -444,7 +346,6 @@ export const assignServicesToStaff = async (req, res) => {
                     "One or more services are invalid or inactive"
             });
         }
-
         // 6. Update services
         const updatedStaff =
             await UserDetails.findByIdAndUpdate(
@@ -464,28 +365,21 @@ export const assignServicesToStaff = async (req, res) => {
                     "services",
                     "name description duration price status"
                 );
-
         // 7. Response
         return res.status(200).json({
             message:
                 "Services assigned to staff successfully",
             staff: updatedStaff
         });
-
     } catch (error) {
-
         console.error(
             "Assign services error:",
             error
         );
+        next(error);
 
-        return res.status(500).json({
-            message: "Failed to assign services",
-            error: error.message
-        });
     }
 };
-
 // | Situation                         |                      Status |
 // | --------------------------------- | --------------------------: |
 // | User created                      |               `201 Created` |

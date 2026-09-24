@@ -5,7 +5,7 @@ import ServiceDetails from "../models/serviceModel.js";
 
 
 // CREATE STAFF
-export const createStaff = async (req, res) => {
+export const createStaff = async  (req, res, next) => {
   try {
     const {
       name,
@@ -82,17 +82,13 @@ export const createStaff = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Create staff error:", error);
-
-    return res.status(500).json({
-      message: "Failed to create staff"
-    });
+    next(error);
   }
 };
 
 
 // GET ALL STAFF
-export const getStaff = async (req, res) => {
+export const getStaff = async  (req, res, next) => {
   try {
     const staff = await UserDetails.find({
       role: "STAFF"
@@ -108,17 +104,13 @@ export const getStaff = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Get staff error:", error);
-
-    return res.status(500).json({
-      message: "Failed to fetch staff"
-    });
+    next(error);
   }
 };
 
 
 // GET STAFF BY ID
-export const getStaffById = async (req, res) => {
+export const getStaffById = async  (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -145,17 +137,13 @@ export const getStaffById = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Get staff details error:", error);
-
-    return res.status(500).json({
-      message: "Failed to fetch staff"
-    });
+    next(error);
   }
 };
 
 
 // UPDATE STAFF
-export const updateStaff = async (req, res) => {
+export const updateStaff = async  (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -232,17 +220,13 @@ export const updateStaff = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Update staff error:", error);
-
-    return res.status(500).json({
-      message: "Failed to update staff"
-    });
+    next(error);
   }
 };
 
 
 // UPDATE STAFF STATUS
-export const updateStaffStatus = async (req, res) => {
+export const updateStaffStatus = async  (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -285,17 +269,13 @@ export const updateStaffStatus = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Update staff status error:", error);
-
-    return res.status(500).json({
-      message: "Failed to update staff status"
-    });
+    next(error);
   }
 };
 
 
 // DELETE STAFF
-export const deleteStaff = async (req, res) => {
+export const deleteStaff = async  (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -321,10 +301,6 @@ export const deleteStaff = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Delete staff error:", error);
-
-    return res.status(500).json({
-      message: "Failed to delete staff"
-    });
+   next(error);
   }
 };
