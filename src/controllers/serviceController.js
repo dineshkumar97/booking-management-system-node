@@ -1,6 +1,6 @@
 import Service from "../models/serviceModel.js";
 
-export const createService = async (req, res) => {
+export const createService = async  (req, res, next) => {
   try {
 
     const {
@@ -48,20 +48,12 @@ export const createService = async (req, res) => {
     });
 
   } catch (error) {
-
-    console.error(
-      "Create service error:",
-      error
-    );
-
-    return res.status(500).json({
-      message: "Failed to create service"
-    });
+ next(error);
   }
 };
 
 // GET ALL SERVICES
-export const getServices = async (req, res) => {
+export const getServices = async  (req, res, next) => {
   try {
     const services = await Service.find()
       .sort({ createdAt: -1 });
@@ -72,17 +64,13 @@ export const getServices = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Get services error:", error);
-
-    return res.status(500).json({
-      message: "Failed to fetch services"
-    });
+    next(error);
   }
 };
 
 
 // GET SERVICE BY ID
-export const getServiceById = async (req, res) => {
+export const getServiceById = async  (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -100,17 +88,13 @@ export const getServiceById = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Get service error:", error);
-
-    return res.status(500).json({
-      message: "Failed to fetch service"
-    });
+    next(error);
   }
 };
 
 
 // UPDATE SERVICE
-export const updateService = async (req, res) => {
+export const updateService = async  (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -181,17 +165,13 @@ export const updateService = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Update service error:", error);
-
-    return res.status(500).json({
-      message: "Failed to update service"
-    });
+    next(error);
   }
 };
 
 
 // DELETE SERVICE
-export const deleteService = async (req, res) => {
+export const deleteService = async  (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -208,10 +188,6 @@ export const deleteService = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Delete service error:", error);
-
-    return res.status(500).json({
-      message: "Failed to delete service"
-    });
+    next(error);
   }
 };

@@ -44,6 +44,11 @@ const userDetailsSchema = new mongoose.Schema({
         trim: true,
         default: ""
     },
+    onlineStatus: {
+        type: String,
+        enum: ['online', 'offline'],
+        default: 'offline'
+    },
 
     status: {
         type: String,
@@ -80,7 +85,40 @@ const userDetailsSchema = new mongoose.Schema({
             ref: "Service"
         }
     ],
+    onlineStatus: {
+        type: String,
+        enum: ['online', 'offline'],
+        default: 'offline'
+    },
+
+    // User selected availability
+    availabilityStatus: {
+        type: String,
+        enum: [
+            'available',
+            'busy',
+            'away',
+            'dnd',
+            'out_of_office',
+            'offline'
+        ],
+        default: 'available'
+    },
+
+    lastSeen: {
+        type: Date,
+        default: null
+    },
+
+    outOfOffice: {
+        enabled: {
+            type: Boolean,
+            default: false
+        },
+    }
+
 },
+
     {
         timestamps: true
     });
