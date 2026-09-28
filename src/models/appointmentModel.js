@@ -34,6 +34,10 @@ const appointmentSchema = new mongoose.Schema(
             type: String,
             default: ""
         },
+         duration: {
+            type: Number,
+            default: ""
+        },
         status: {
             type: String,
             enum: [

@@ -102,3 +102,73 @@ export const handler = async (event, context) => {
 // | 18        | WebSockets         | Socket.IO                        |
 // | 19        | Graceful shutdown  | Production server handling       |
 // | 20        | Monitoring         | Health checks + AWS CloudWatch   |
+
+
+Round 1 — Project explanation
+
+Prepare a strong 2-minute BMS explanation:
+
+What is the project?
+Your role
+Angular architecture
+Backend architecture
+Authentication
+Booking flow
+Socket.IO
+AWS deployment
+MongoDB
+Security
+Performance/scaling
+Round 2 — Senior Angular questions
+
+We'll cover:
+
+Components
+Services
+Signals
+RxJS
+Change Detection
+OnPush
+Routing
+Guards
+Interceptors
+Reactive Forms
+Lazy Loading
+Performance
+State Management
+Error Handling
+Testing
+Round 3 — Backend + AWS
+Node.js
+Express
+MongoDB
+Transactions
+Indexes
+JWT
+REST API
+Redis
+Socket.IO
+Lambda
+API Gateway
+S3
+CloudWatch
+CI/CD
+Security
+Scaling
+Round 4 — HR + practical interview
+
+We'll practice:
+
+Tell me about yourself
+Explain your project
+Why are you changing?
+Current salary
+Expected salary
+Notice period
+Last working day
+Why should we hire you?
+Strengths/weaknesses
+Difficult situation
+Team conflict
+Production issue
+Client communication

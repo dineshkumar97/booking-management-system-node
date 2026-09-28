@@ -3,7 +3,7 @@ import Appointment from "../models/appointmentModel.js";
 // =====================================================
 // CUSTOMER - CREATE APPOINTMENT
 // =====================================================
-export const createAppointment = async  (req, res, next) => {
+export const createAppointment = async (req, res, next) => {
   try {
     const {
       serviceId,
@@ -11,86 +11,91 @@ export const createAppointment = async  (req, res, next) => {
       appointmentDate,
       startTime,
       endTime,
-      notes
+      notes,
+      duration
     } = req.body;
-    
+
     // 2. Get logged-in customer
-    const customerId =
-      req.user._id.toString();
+    const customerId = req.user._id.toString();
+
     // 3. Validate customer ID
-    if (
-      !mongoose.Types.ObjectId.isValid(
-        customerId
-      )
-    ) {
+    if (!mongoose.Types.ObjectId.isValid(customerId)) {
       return res.status(400).json({
         message: "Invalid customer ID"
       });
     }
+
     // 4. Validate service ID
-    if (
-      !mongoose.Types.ObjectId.isValid(
-        serviceId
-      )
-    ) {
+    if (!mongoose.Types.ObjectId.isValid(serviceId)) {
       return res.status(400).json({
         message: "Invalid service ID"
       });
     }
+
     // 5. Validate staff ID
-    if (
-      !mongoose.Types.ObjectId.isValid(
-        staffId
-      )
-    ) {
+    if (!mongoose.Types.ObjectId.isValid(staffId)) {
       return res.status(400).json({
         message: "Invalid staff ID"
       });
     }
+
+    const timeToMinutes = (time) => {
+      const [value, period] = time.split(" ");
+      let [hours, minutes] = value.split(":").map(Number);
+
+      if (period === "PM" && hours !== 12) hours += 12;
+      if (period === "AM" && hours === 12) hours = 0;
+
+      return hours * 60 + minutes;
+    };
     // 6. Check whether slot is already booked
-    const existingAppointment =
-      await Appointment.findOne({
-        staffId,
-        appointmentDate:
-          new Date(appointmentDate),
-        startTime,
-        status: {
-          $in: [
-            "PENDING",
-            "CONFIRMED"
-          ]
-        }
-      });
+    const existingAppointments = await Appointment.find({
+      staffId,
+      appointmentDate: new Date(appointmentDate),
+      status: {
+        $in: ["PENDING", "CONFIRMED"]
+      }
+    });
+
+    const newStart = timeToMinutes(startTime);
+    const newEnd = timeToMinutes(endTime);
+
+    const existingAppointment = existingAppointments.find(
+      appointment =>
+        newStart < timeToMinutes(appointment.endTime) &&
+        newEnd > timeToMinutes(appointment.startTime)
+    );
+
     if (existingAppointment) {
       return res.status(409).json({
-        message:
-          "This time slot is already bookedp"
+        message: "This time slot is already booked"
       });
     }
     // 7. Generate unique Order ID
-    const lastAppointment =
-      await Appointment
-        .findOne({
-          orderId: {
-            $regex: /^BMSOR\d+$/
-          }
-        })
-        .sort({
-          orderId: -1
-        });
+    const lastAppointment = await Appointment
+      .findOne({
+        orderId: {
+          $regex: /^BMSOR\d+$/
+        }
+      })
+      .sort({
+        orderId: -1
+      });
+
     let orderId = "BMSOR000001";
+
     if (lastAppointment?.orderId) {
-      const lastNumber =
-        parseInt(
-          lastAppointment.orderId
-            .replace("BMS", ""),
-          10
-        );
+      const lastNumber = parseInt(
+        lastAppointment.orderId.replace("BMSOR", ""),
+        10
+      );
+
       orderId =
         `BMSOR${String(
           lastNumber + 1
         ).padStart(6, "0")}`;
     }
+
     // 8. Create appointment
     const appointment =
       await Appointment.create({
@@ -103,34 +108,32 @@ export const createAppointment = async  (req, res, next) => {
         startTime,
         endTime: endTime || "",
         status: "PENDING",
-        notes: notes || ""
+        notes: notes || "",
+        duration
+
       });
+
     // 9. Response
     return res.status(201).json({
-      message:
-        "Appointment booked successfully",
+      message: "Appointment booked successfully",
       data: {
         id: appointment._id,
-        orderId:
-          appointment.orderId,
-        customerId:
-          appointment.customerId,
-        serviceId:
-          appointment.serviceId,
-        staffId:
-          appointment.staffId,
+        orderId: appointment.orderId,
+        customerId: appointment.customerId,
+        serviceId: appointment.serviceId,
+        staffId: appointment.staffId,
         appointmentDate:
           appointment.appointmentDate,
-        startTime:
-          appointment.startTime,
-        endTime:
-          appointment.endTime,
-        status:
-          appointment.status,
-        notes:
-          appointment.notes
+        startTime: appointment.startTime,
+        endTime: appointment.endTime,
+        status: appointment.status,
+        notes: appointment.notes,
+        duration: appointment.duration
+
+
       }
     });
+
   } catch (error) {
     next(error);
   }
@@ -138,7 +141,7 @@ export const createAppointment = async  (req, res, next) => {
 // =====================================================
 // CUSTOMER - GET MY APPOINTMENTS
 // =====================================================
-export const getCustomerAppointments = async  (req, res, next) => {
+export const getCustomerAppointments = async (req, res, next) => {
   try {
     const customerId = req.user.id;
     const appointments = await Appointment.find({
@@ -167,7 +170,7 @@ export const getCustomerAppointments = async  (req, res, next) => {
 // =====================================================
 // CUSTOMER - GET APPOINTMENT BY ID
 // =====================================================
-export const getCustomerAppointmentById = async  (req, res, next) => {
+export const getCustomerAppointmentById = async (req, res, next) => {
   try {
     const { id } = req.params;
     // 1. Validate appointment ID
@@ -207,7 +210,7 @@ export const getCustomerAppointmentById = async  (req, res, next) => {
 // =====================================================
 // CUSTOMER - CANCEL APPOINTMENT
 // =====================================================
-export const cancelAppointment = async  (req, res, next) => {
+export const cancelAppointment = async (req, res, next) => {
   try {
     const { id } = req.params;
     // 1. Validate appointment ID
@@ -245,7 +248,7 @@ export const cancelAppointment = async  (req, res, next) => {
 // =====================================================
 // STAFF - GET STAFF APPOINTMENTS
 // =====================================================
-export const getStaffAppointments = async  (req, res, next) => {
+export const getStaffAppointments = async (req, res, next) => {
   try {
     // Logged-in staff
     const staffId = req.user.id;
@@ -279,7 +282,7 @@ export const getStaffAppointments = async  (req, res, next) => {
 // =====================================================
 // STAFF - GET APPOINTMENT BY ID
 // =====================================================
-export const getStaffAppointmentById = async  (req, res, next) => {
+export const getStaffAppointmentById = async (req, res, next) => {
   try {
     const staffId = req.user.id;
     const appointmentId = req.params.id;
@@ -322,7 +325,7 @@ export const getStaffAppointmentById = async  (req, res, next) => {
 // =====================================================
 // STAFF - CONFIRM APPOINTMENT
 // =====================================================
-export const confirmAppointment = async  (req, res, next) => {
+export const confirmAppointment = async (req, res, next) => {
   try {
     const staffId = req.user.id;
     const appointmentId = req.params.id;
@@ -362,7 +365,7 @@ export const confirmAppointment = async  (req, res, next) => {
 // =====================================================
 // STAFF - REJECT APPOINTMENT
 // =====================================================
-export const rejectAppointment = async  (req, res, next) => {
+export const rejectAppointment = async (req, res, next) => {
   try {
     const staffId = req.user._id;
     const appointmentId = req.params.id;
@@ -412,7 +415,7 @@ export const rejectAppointment = async  (req, res, next) => {
 // =====================================================
 // STAFF - COMPLETE APPOINTMENT
 // =====================================================
-export const completeAppointment = async  (req, res, next) => {
+export const completeAppointment = async (req, res, next) => {
   try {
     const staffId = req.user.id;
     const appointmentId = req.params.id;
@@ -453,7 +456,7 @@ export const completeAppointment = async  (req, res, next) => {
 // =====================================================
 // STAFF - GET ALL APPOINTMENT
 // =====================================================
-export const getAllAppointments = async  (req, res, next) => {
+export const getAllAppointments = async (req, res, next) => {
   try {
     const appointments = await Appointment.find()
       .populate(
